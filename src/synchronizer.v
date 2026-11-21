@@ -25,27 +25,12 @@ module synchronizer (
 );
 
   // TODO: implementar
-  //
-  // PROVISIONAL: un solo flip-flop para MOSI y CS_n (en vez de dos) y sin
-  // detector de flancos. Existe solo para que el chip tenga un camino real
-  // entre pines y el flujo GDS no falle por pines desconectados. Reemplazar.
-  reg mosi_q, csn_q;
-  always @(posedge clk) begin
-    if (!rst_n) begin
-      mosi_q <= 1'b0;
-      csn_q  <= 1'b1;  // CS inactivo tras el reset
-    end else begin
-      mosi_q <= mosi_in;
-      csn_q  <= csn_in;
-    end
-  end
-
-  assign mosi     = mosi_q;
-  assign csn      = csn_q;
+  assign mosi     = 1'b0;
+  assign csn      = 1'b1;  // CS inactivo mientras no haya lógica
   assign sck_rise = 1'b0;
   assign sck_fall = 1'b0;
 
   // Quitar de aquí cada entrada a medida que se use
-  wire _unused = &{sck_in, 1'b0};
+  wire _unused = &{clk, rst_n, sck_in, mosi_in, csn_in, 1'b0};
 
 endmodule

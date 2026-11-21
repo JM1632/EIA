@@ -162,7 +162,14 @@ module tt_um_jm1632_pwm_spi (
       period_end_q <= period_end;
   end
 
-  assign uo_out  = {3'b000, period_end_q, miso, pwm2, pwm1, pwm0};
+  // PROVISIONAL (borrar cuando el sincronizador y el SPI tengan lógica):
+  // mientras todos los bloques son esqueletos, la síntesis elimina toda la
+  // lógica y el flujo GDS falla por pines desconectados. Este eco de MOSI
+  // en uo_out[7] (solo con CS_n = 0) mantiene un camino real entre pines.
+  // Al borrarlo, volver a poner uo_out[7] en 0.
+  wire placeholder = ui_in[1] & ~ui_in[2];
+
+  assign uo_out  = {placeholder, 2'b00, period_end_q, miso, pwm2, pwm1, pwm0};
   assign uio_out = 8'd0;
   assign uio_oe  = 8'd0;
 
