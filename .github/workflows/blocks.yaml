@@ -6,6 +6,7 @@ jobs:
   block:
     name: ${{ matrix.block }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 10  # un test que se cuelga no debe bloquear el runner
     strategy:
       fail-fast: false
       matrix:

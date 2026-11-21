@@ -76,8 +76,11 @@ async def test_255_sin_tick(dut):
     """En 255 sin tick: la cuenta espera y period_end NO se activa."""
     await iniciar(dut)
     await poner_tick(dut, 1)
-    while int(dut.cnt.value) != 255:
+    for _ in range(300):
+        if int(dut.cnt.value) == 255:
+            break
         await FallingEdge(dut.clk)
+    assert int(dut.cnt.value) == 255, "con tick = 1, cnt no llegó a 255 en 300 ciclos"
     await poner_tick(dut, 0)
     for _ in range(10):
         assert int(dut.cnt.value) == 255, "sin tick la cuenta debe quedarse en 255"
