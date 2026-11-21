@@ -1,0 +1,45 @@
+name: blocks
+# Ejecuta el test de cada bloque por separado (test/blocks).
+# Cada bloque aparece como un job propio, así se ve cuáles pasan y cuáles no.
+on: [push, workflow_dispatch]
+jobs:
+  block:
+    name: ${{ matrix.block }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        block: [prescaler, pwm_counter, pwm_channel, reg_bank, synchronizer, spi_slave]
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Install iverilog
+        shell: bash
+        run: sudo apt-get update && sudo apt-get install -y iverilog
+
+      - name: Setup python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install Python packages
+        shell: bash
+        run: pip install -r test/requirements.txt
+
+      - name: Run block test
+        shell: bash
+        run: |
+          cd test/blocks
+          make BLOCK=${{ matrix.block }} WAVES=1
+          # make termina bien aunque fallen los tests: el resultado real está en el XML
+          python -m cocotb_tools.check_results results_${{ matrix.block }}.xml
+
+      - name: Upload waveform and results
+        if: success() || failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ondas-${{ matrix.block }}
+          path: |
+            test/blocks/results_${{ matrix.block }}.xml
+            test/blocks/sim_build/${{ matrix.block }}/*.fst
