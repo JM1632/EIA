@@ -60,14 +60,14 @@ async def test_cuenta_completa(dut):
     esperado = 0
     vueltas = 0
     for _ in range(256 * 3):
-        await FallingEdge(dut.clk)
-        await Timer(1, unit="ns")
         cnt = int(dut.cnt.value)
         pe = int(dut.period_end.value)
         assert cnt == esperado, f"se esperaba cnt = {esperado}, se leyó {cnt}"
         assert pe == int(cnt == 255), f"cnt = {cnt}: period_end debe ser {int(cnt == 255)}, se leyó {pe}"
         vueltas += pe
         esperado = (esperado + 1) % 256
+        await FallingEdge(dut.clk)
+        await Timer(1, unit="ns")
     assert vueltas == 3, f"en 768 ticks debe haber 3 period_end, hubo {vueltas}"
 
 
