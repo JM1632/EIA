@@ -33,9 +33,13 @@ module spi_slave (
   assign addr  = 7'd0;
   assign wdata = 8'd0;
   assign wr_en = 1'b0;
-  assign miso  = 1'b0;
+
+  // PROVISIONAL: MISO devuelve MOSI mientras CS_n = 0 (eco). Existe solo
+  // para que el chip tenga un camino real entre pines y el flujo GDS no
+  // falle por pines desconectados. Reemplazar por el registro de salida.
+  assign miso  = mosi & ~csn;
 
   // Quitar de aquí cada entrada a medida que se use
-  wire _unused = &{clk, rst_n, csn, mosi, sck_rise, sck_fall, rdata, 1'b0};
+  wire _unused = &{clk, rst_n, sck_rise, sck_fall, rdata, 1'b0};
 
 endmodule
