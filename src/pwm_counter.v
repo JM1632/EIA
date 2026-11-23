@@ -1,12 +1,10 @@
+
 /*
  * Contador del PWM — Subgrupo 1
  * SPDX-License-Identifier: Apache-2.0
  *
  * Cuenta de 0 a 255 avanzando solo con tick, y vuelve a 0.
- * period_end vale 1 durante un ciclo cuando cnt = 255 y llega tick.
- *
- * ESQUELETO: los puertos son el contrato acordado, no cambiarlos sin
- * acordarlo con todo el equipo. Reemplazar los assign por la lógica real.
+ * period_end vale 1 cuando cnt = 255 y llega tick.
  */
 
 `default_nettype none
@@ -15,15 +13,32 @@ module pwm_counter (
     input  wire       clk,         // Reloj del sistema
     input  wire       rst_n,       // Reset activo en bajo
     input  wire       tick,        // Avanza un paso ahora
-    output wire [7:0] cnt,         // Posición dentro del periodo (0-255)
-    output wire       period_end   // Pulso de un ciclo: terminó un periodo
+    output wire [7:0] cnt,         // Posicion dentro del periodo (0-255)
+    output wire       period_end   // Pulso de fin de periodo
 );
 
-  // TODO: implementar
-  assign cnt        = 8'd0;
-  assign period_end = 1'b0;
+    // Registro interno de 8 bits
+    reg [7:0] count_reg;
 
-  // Quitar de aquí cada entrada a medida que se use
-  wire _unused = &{clk, rst_n, tick, 1'b0};
+    // Conexion del registro con la salida
+    assign cnt = count_reg;
+
+    // Indicador de fin de periodo
+    assign period_end = (count_reg == 8'd255) && tick;
+
+    // Logica secuencial del contador
+    always @(posedge clk or negedge rst_n) begin
+
+        if (!rst_n) begin
+            count_reg <= 8'd0;
+        end
+
+        else if (tick) begin
+            count_reg <= count_reg + 8'd1;
+        end
+
+    end
 
 endmodule
+
+`default_nettype wire
