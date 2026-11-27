@@ -29,56 +29,66 @@ module spi_slave (
     output wire       miso       // Bit hacia el maestro (pin uo_out[3])
 );
 
-  reg [3:0] b_counter;  // internal bit counter
+  // Internal registers
+  reg [4:0] b_counter;  // internal bit counter
   reg [7:0] in_reg;     // 8 bit register for MOSI
   reg [7:0] out_reg;    // 8 bit register for MISO
-  wire is_write;
+  reg is_write;         // Is write 
 
-  always @(posedge clk  or rst_n) begin
+  // auxiliar registers for outputs in Always block
+  reg [6:0] addr_r;     // address
+  reg [7:0] wdata_r;    // Write data
+  reg wr_en_r;          // write data enable
+
+  // output wire assignmets
+  assign addr = addr_r;
+  assign wdata = wdata_r;
+  assign wr_en = wr_en_r;
+  assign miso = ~csn & out_reg[7];
+
+  always @(posedge clk  or negedge rst_n) begin
     
     if (!rst_n)begin      //reset internal registers on reset
-      b_counter <= 4'b0000;
+      b_counter <= 5'b0_0000;
       in_reg <= 8'b0000_0000;
-      assign is_write <= 0;
+      out_reg <= 8'b0000_0000;
+      is_write <= 0;
+    end else begin
+      wr_en_r <= 1'b0;
+
+      if (csn) begin
+        b_counter <= 5'b0_0000;
+      end
+
+      else if (sck_rise) begin
+          b_counter <= b_counter + 5'b0_0001;
+          in_reg <= {in_reg[6:0], mosi};
+
+          if(b_counter == 5'd7)begin    // Encabezado: assign addres & is_write
+            is_write <= in_reg[6];
+            addr_r <= {in_reg[5:0], mosi};  
+          end
+
+          if(b_counter == 5'd15)begin   //Dato: assign wdata & wr_en
+            if(is_write) begin
+              wdata_r <= {in_reg[6:0], mosi};
+              wr_en_r <= 1'b1;
+            end
+          end 
+      end
+
+      if(sck_fall) begin             // Registro de salida: saca datos por miso
+        if (b_counter == 5'd8) begin
+          out_reg <= rdata;
+        end else if (b_counter > 5'd8 && b_counter < 5'd16)begin
+          out_reg <= out_reg << 1;
+        end            
+      end
+      
+
     end
     
-    if (csn) begin
-      b_counter <= 4'b0000;
-    end
-
-    if(!csn)begin
-        b_counter <= b_counter + 4'b0001;
-    end
-
-
-    if (sck_rise) begin
-      in_reg <= in_reg << 1 + mosi;
-
-      if(b_counter == 4d'7)begin    // Encabezado: assign addres & is_write
-        assign is_write <= in_reg[7];
-        assign addr <= in_reg[6:0]
-        in_reg <= 8b'0000_0000;
-      end
-
-      if(b_counter == 4'd15)begin   //Dato: assign wdata & wr_en
-        if(is_write) begin
-          assign wdata <= in_reg;
-          assign wr_en <= 1;
-        end
-        in_reg <= 8b'0000_0000;
-      end
-    end
-
-    if(sck_fall) begin             // Registro de salida: saca datos por miso
-      if(b_counter == 4d'7)begin 
-        out_reg <= rdata;
-        assign miso <= out_reg[0]
-      end
-      if(b_counter >= 4d'7) begin
-        out_reg <= out_reg >> 1;
-        assign miso <= out_reg[0]
-      end
-    end
+    
   end
 
 
