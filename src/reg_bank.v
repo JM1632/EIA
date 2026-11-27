@@ -34,16 +34,60 @@ module reg_bank (
     output wire [7:0]  duty2    // DUTY2
 );
 
-  // TODO: implementar
-  assign rdata  = 8'd0;
-  assign ch_en  = 3'd0;
-  assign ch_inv = 3'd0;
-  assign presc  = 16'd0;
-  assign duty0  = 8'd0;
-  assign duty1  = 8'd0;
-  assign duty2  = 8'd0;
+  reg [7:0] ctrl;
+  reg [7:0] presc_l;
+  reg [7:0] presc_h;
+  reg [7:0] duty0_reg;
 
-  // Quitar de aquí cada entrada a medida que se use
-  wire _unused = &{clk, rst_n, addr, wdata, wr_en, 1'b0};
+  always @(posedge clk or negedge rst_n) begin
+      if (!rst_n) begin
+          ctrl    <= 8'h00;
+          presc_l <= 8'h00;
+          presc_h <= 8'h00;
+          duty0_reg   <= 8'h00;
+          duty1   <= 8'h00;
+          duty2   <= 8'h00;
+      end else if (wr_en) begin
+          case (addr)
+              7'h00: ctrl    <= wdata;
+              7'h01: presc_l <= wdata;
+              7'h02: presc_h <= wdata;
+              7'h03: duty0_reg   <= wdata;
+              7'h04: duty1   <= wdata;
+              7'h05: duty2   <= wdata;
+              //default: ; // do nothing
+          endcase
+      end
+  end
+
+  always @(*) begin
+      case (addr)
+          7'h00:   rdata = ctrl;
+          7'h01:   rdata = presc_l;
+          7'h02:   rdata = presc_h;
+          7'h03:   rdata = duty0;
+          7'h04:   rdata = duty1;
+          7'h05:   rdata = duty2;
+          7'h06:   rdata = 8'hA5;     // ID
+          default: rdata = 8'h00; // Si piden cualquier otro número, muestra 0
+      endcase
+  end
+
+  assign ch_en  = ctrl[2:0];
+  assign ch_inv = ctrl[5:3];
+  assign presc  = {presc_h, presc_l};
+  assign duty0 = duty0_reg;
+
+  // // TODO: implementar
+  // assign rdata  = 8'd0;
+  // assign ch_en  = 3'd0;
+  // assign ch_inv = 3'd0;
+  // assign presc  = 16'd0;
+  // assign duty0  = 8'd0;
+  // assign duty1  = 8'd0;
+  // assign duty2  = 8'd0;
+
+  // // Quitar de aquí cada entrada a medida que se use
+  // wire _unused = &{clk, rst_n, addr, wdata, wr_en, 1'b0};
 
 endmodule
